@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   validateStudent,
   validateBank,
@@ -31,31 +31,35 @@ test("registration accepts grades 4–6, class formats, and leading zero numbers
     "",
   );
 });
-test("15 initial questions, two choices, five per level", () => {
-  assert.equal(validateBank(bank).length, 15);
-  assert.deepEqual(
-    [1, 2, 3].map((l) => bank.filter((q) => q.level === l).length),
-    [5, 5, 5],
-  );
-  assert.equal(bank.map((q) => q.correct).join(""), "ABABABABABABABA");
+// Fixed examples test the engine independently of the teacher-editable lesson.
+const sample = Array.from({ length: 15 }, (_, i) => ({
+  id: `sample-${i + 1}`, level: Math.floor(i / 5) + 1, order: i % 5 + 1,
+  text: `Example question ${i + 1}`, a: "Choice A", b: "Choice B",
+  correct: i % 2 ? "B" : "A", active: true, image: "",
+}));
+test("editable practice bank remains playable with available local pictures", () => {
+  const playable = validateBank(bank);
+  assert.equal(playable.length, bank.filter(q => q.active).length);
   assert.equal(VEHICLES.length, 5);
-  for (const q of bank) {
-    assert.ok(q.a);
-    assert.ok(q.b);
+  for (const q of playable) {
+    if (q.image && !/^https?:\/\//.test(q.image)) {
+      assert.ok(existsSync(new URL(`../${q.image}`, import.meta.url)),
+        `Picture missing for ${q.id}: ${q.image}`);
+    }
   }
 });
 test("variable totals and scores depend only on accuracy", () => {
   assert.equal(
     score(
-      bank.map((q) => q.correct),
-      bank,
+      sample.map((q) => q.correct),
+      sample,
     ).score,
     100,
   );
-  const a = bank.map((q, i) =>
+  const a = sample.map((q, i) =>
     i < 12 ? q.correct : q.correct === "A" ? "B" : "A",
   );
-  assert.equal(score(a, bank).score, 80);
+  assert.equal(score(a, sample).score, 80);
   assert.equal(
     score(
       ["A", "A", "A"],
@@ -68,14 +72,14 @@ test("variable totals and scores depend only on accuracy", () => {
     33.33,
   );
 });
-test("invalid banks rejected", () => {
+test("invalid samples rejected", () => {
   for (const mutate of [
     (b) => (b[1].id = b[0].id),
     (b) => (b[1].order = b[0].order),
     (b) => (b[0].a = ""),
     (b) => b.forEach((q) => (q.level = 1)),
   ]) {
-    const b = structuredClone(bank);
+    const b = structuredClone(sample);
     mutate(b);
     assert.throws(() => validateBank(b));
   }
