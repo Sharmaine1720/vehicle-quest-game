@@ -50,7 +50,7 @@
     "text": "Look at the picture.",
     "a": "out of",
     "b": "off",
-    "correct": "A",
+    "correct": "B",
     "image": "assets/off-plane.png",
     "active": true
   },
