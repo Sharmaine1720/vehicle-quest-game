@@ -7,7 +7,7 @@
     "a": "in.",
     "b": "on.",
     "correct": "A",
-    "image": "assests/in-car",
+    "image": "assests/in-car.png",
     "active": true
   },
   {
@@ -18,7 +18,7 @@
     "a": "out of",
     "b": "off",
     "correct": "B",
-    "image": "assests/off-bus",
+    "image": "assests/off-bus.png",
     "active": true
   },
   {
@@ -29,7 +29,7 @@
     "a": "on",
     "b": "in",
     "correct": "A",
-    "image": "assets/on-plane",
+    "image": "assets/on-plane.png",
     "active": true
   },
   {
@@ -40,7 +40,7 @@
     "a": "off",
     "b": "out of",
     "correct": "B",
-    "image": "assets/out-car",
+    "image": "assets/out-car.png",
     "active": true
   },
   {
@@ -51,7 +51,7 @@
     "a": "out of",
     "b": "off",
     "correct": "A",
-    "image": "assets/off-plane",
+    "image": "assets/off-plane.png",
     "active": true
   },
   {
