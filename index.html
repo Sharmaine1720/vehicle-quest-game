@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#123d54" />
+    <title>Vehicle Quest · Race, Dodge & Learn!</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="./"
+        >🏁 VEHICLE QUEST <small>RACE, DODGE & LEARN!</small></a
+      >
+      <div>
+        <button id="sound" aria-pressed="true">♫ Sound on</button
+        ><button id="music" disabled>Music unavailable</button
+        ><button id="teacher">Teacher Mode</button>
+      </div>
+    </header>
+    <main>
+      <section id="welcome" class="screen welcome">
+        <div class="intro">
+          <span class="eyebrow">YOUR NEXT ENGLISH ADVENTURE</span>
+          <h1>Big wheels.<br />Brave minds.<br /><em>Let’s ride!</em></h1>
+          <p>
+            Three amazing worlds. Five awesome rides.<br />One adventure powered
+            by your English!
+          </p>
+          <div class="badges">
+            <span>🌻 Countryside</span><span>🏙️ City</span
+            ><span>⛰️ Mountains</span>
+          </div>
+          <img
+            src="assets/vehicles/car-selection.png"
+            alt="Your cartoon race car"
+            class="hero-car"
+          />
+        </div>
+        <form id="registration" class="panel">
+          <span class="eyebrow">DRIVER CHECK-IN</span>
+          <h2>Ready, explorer?</h2>
+          <p>Your adventure starts right here.</p>
+          <label
+            >Student name<input
+              name="name"
+              autocomplete="off"
+              maxlength="80"
+              required
+              placeholder="Your name"
+          /></label>
+          <div class="row">
+            <label
+              >Grade<select name="grade" required>
+                <option value="">Choose grade</option>
+                <option value="4">Grade 4</option>
+                <option value="5">Grade 5</option>
+                <option value="6">Grade 6</option>
+              </select></label
+            ><label
+              >Class<input
+                name="class"
+                maxlength="30"
+                placeholder="e.g. 401"
+                required
+            /></label>
+          </div>
+          <label
+            >Student number<input
+              name="number"
+              maxlength="20"
+              inputmode="numeric"
+              placeholder="e.g. 01"
+              required
+          /></label>
+          <p id="registration-error" role="alert"></p>
+          <button class="primary wide">START YOUR ADVENTURE →</button>
+          <p class="privacy">
+            🔒 Your details stay private. No public scoreboards.
+          </p>
+          <p id="mode-note" class="notice"></p>
+          <button type="button" id="resume-result" hidden>
+            Retry a pending result
+          </button>
+        </form>
+      </section>
+      <section id="selection" class="screen" hidden>
+        <div class="section-title">
+          <span class="eyebrow">PICK YOUR ADVENTURE PARTNER</span>
+          <h1>Choose your ride!</h1>
+          <p>Every ride is a great choice. Your English earns the points.</p>
+        </div>
+        <div id="vehicles" class="vehicles"></div>
+        <div class="center">
+          <p id="selected-label">Choose a vehicle to get started.</p>
+          <button id="race-start" class="primary" disabled>
+            READY TO RACE! →
+          </button>
+        </div>
+      </section>
+      <section id="race" class="screen" hidden>
+        <div class="hud">
+          <strong id="level-label"></strong><span id="progress-label"></span
+          ><span id="hearts" aria-label="Hearts"></span
+          ><span id="ride-label"></span><button id="pause">Ⅱ Pause</button>
+        </div>
+        <div class="track-wrap">
+          <canvas
+            id="track"
+            width="1100"
+            height="600"
+            aria-label="Three lane racing track"
+          ></canvas>
+          <div id="race-message" aria-live="polite"></div>
+          <progress
+            id="progress"
+            value="0"
+            max="15"
+            aria-label="Question progress"
+          ></progress>
+        </div>
+        <div class="controls">
+          <button id="left" aria-label="Steer left">◀ LEFT</button
+          ><span
+            >Hold to steer · ← → or A / D<br /><small class="rotate"
+              >More room to race? Try turning your iPad sideways.</small
+            ></span
+          ><button id="right" aria-label="Steer right">RIGHT ▶</button>
+        </div>
+      </section>
+      <section id="results" class="screen" hidden>
+        <div class="panel results">
+          <span class="eyebrow">🏆 ADVENTURE COMPLETE</span>
+          <h1>You did it!</h1>
+          <div class="score" id="final-score"></div>
+          <p id="result-detail"></p>
+          <p id="result-stats"></p>
+          <p id="submission" role="status"></p>
+          <button id="retry" hidden>Retry recording result</button
+          ><button id="again" class="primary">RACE AGAIN ↗</button>
+        </div>
+      </section>
+    </main>
+    <dialog id="checkpoint">
+      <span class="eyebrow" id="question-label"></span>
+      <h2 id="question-text"></h2>
+      <img id="question-image" alt="Question picture" hidden />
+      <div id="answers"></div>
+      <p id="feedback" role="status"></p>
+      <button id="continue" class="primary" hidden>KEEP RACING →</button
+      ><button id="retry-answer" hidden>Retry answer</button>
+    </dialog>
+    <dialog id="transition">
+      <span class="eyebrow">KEEP EXPLORING</span>
+      <h1 id="transition-title"></h1>
+      <p id="transition-text"></p>
+      <button id="next-level" class="primary">LET’S GO →</button>
+    </dialog>
+    <dialog id="teacher-info">
+      <h2>Teacher Mode</h2>
+      <p id="teacher-message"></p>
+      <button onclick="this.closest('dialog').close()">Close</button>
+    </dialog>
+    <div id="toast" role="status"></div>
+    <script src="config.js"></script>
+    <script type="module" src="js/game.js"></script>
+  </body>
+</html>

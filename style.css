@@ -1,0 +1,506 @@
+:root {
+  font-family: ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  color: #153d50;
+  background: #f4f8ee;
+  font-synthesis: none;
+  --yellow: #ffce46;
+  --green: #087f6c;
+  --ink: #153d50;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  min-height: 48px;
+  border: 2px solid #dce5df;
+  background: white;
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 10px 20px;
+  font-weight: 800;
+  transition:
+    transform 0.15s,
+    background 0.15s;
+}
+button:hover {
+  background: #fff2bd;
+  transform: translateY(-2px);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 4px solid #e18b19;
+  outline-offset: 3px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 4vw;
+  border-bottom: 1px solid #dce5df;
+  gap: 16px;
+  background: #fffdf4;
+}
+.brand {
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 23px;
+  font-weight: 1000;
+  letter-spacing: -1px;
+}
+.brand small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 3px;
+  margin-left: 33px;
+}
+header > div {
+  display: flex;
+  gap: 8px;
+}
+header button {
+  font-size: 13px;
+  padding: 8px 12px;
+}
+.screen {
+  max-width: 1380px;
+  margin: auto;
+  padding: 35px 4vw;
+}
+.screen[hidden] {
+  display: none;
+}
+.welcome {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 6vw;
+  align-items: center;
+  min-height: 80vh;
+}
+.intro {
+  position: relative;
+  padding-bottom: 180px;
+}
+.eyebrow {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--green);
+}
+h1 {
+  font-size: clamp(38px, 5.4vw, 76px);
+  line-height: 1.04;
+  letter-spacing: -3px;
+  margin: 22px 0;
+}
+h1 em {
+  font-style: normal;
+  color: var(--green);
+}
+h2 {
+  font-size: 30px;
+  line-height: 1.25;
+  margin: 12px 0;
+}
+p {
+  line-height: 1.6;
+}
+.intro > p {
+  font-size: 18px;
+  color: #526c75;
+}
+.badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.badges span {
+  padding: 8px 12px;
+  background: #e1eddb;
+  border-radius: 22px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.hero-car {
+  position: absolute;
+  width: 330px;
+  height: 210px;
+  object-fit: contain;
+  bottom: -15px;
+  left: 50px;
+  mix-blend-mode: multiply;
+  animation: bob 3s ease-in-out infinite;
+}
+.panel {
+  background: #fff;
+  border: 1px solid #e1e8df;
+  border-radius: 28px;
+  padding: 30px;
+  box-shadow:
+    0 16px 0 #e5ecdf,
+    0 25px 50px #153d5010;
+}
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  margin: 16px 0;
+}
+input,
+select {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  background: #f7f9f4;
+  border: 2px solid #dce5df;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 7px;
+  color: var(--ink);
+}
+.row {
+  display: flex;
+  gap: 16px;
+}
+.row > * {
+  flex: 1;
+  min-width: 0;
+}
+.primary {
+  background: var(--yellow);
+  border-color: #e7b22a;
+  box-shadow: 0 4px 0 #d79a1e;
+  color: #193b42;
+  letter-spacing: 0.5px;
+}
+.wide {
+  width: 100%;
+}
+.privacy {
+  font-size: 11px;
+  color: #667a7e;
+}
+.notice {
+  font-size: 13px;
+  background: #fff4cb;
+  padding: 10px;
+  border-radius: 10px;
+}
+#registration-error {
+  color: #ad3b30;
+  font-size: 14px;
+}
+.section-title {
+  text-align: center;
+}
+.section-title h1 {
+  font-size: 48px;
+}
+.vehicles {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin: 35px 0;
+}
+.vehicle {
+  background: #fff;
+  border: 3px solid #e2e9df;
+  border-radius: 22px;
+  text-align: center;
+  padding: 14px 8px;
+}
+.vehicle.selected {
+  border-color: var(--green);
+  background: #e9f8ed;
+  box-shadow: 0 6px 0 #a7d5bd;
+}
+.vehicle img {
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+.vehicle h2 {
+  text-transform: capitalize;
+  font-size: 21px;
+}
+.vehicle:hover img {
+  animation: bob 1s infinite;
+}
+.center {
+  text-align: center;
+}
+.hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 15px;
+}
+#hearts {
+  color: #e45869;
+  letter-spacing: 5px;
+}
+.track-wrap {
+  position: relative;
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 8px 0 #cbdaca;
+  background: #94d7c3;
+}
+canvas {
+  width: 100%;
+  height: min(59vh, 620px);
+  display: block;
+}
+progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  border: 0;
+  accent-color: var(--yellow);
+}
+#race-message {
+  position: absolute;
+  top: 22%;
+  width: 100%;
+  text-align: center;
+  font-size: 42px;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 3px 5px #123d54;
+  pointer-events: none;
+}
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  text-align: center;
+}
+.controls button {
+  width: 210px;
+  background: var(--yellow);
+  border-color: #dbb73f;
+  min-height: 72px;
+  font-size: 22px;
+  touch-action: none;
+  user-select: none;
+}
+.controls span {
+  font-size: 14px;
+}
+.rotate {
+  display: none;
+}
+dialog {
+  border: 0;
+  border-radius: 26px;
+  padding: 32px;
+  width: min(660px, 92vw);
+  max-height: 90dvh;
+  color: var(--ink);
+  box-shadow: 0 24px 90px #123d5466;
+}
+dialog::backdrop {
+  background: #102f45bb;
+  backdrop-filter: blur(5px);
+}
+dialog h2 {
+  font-size: clamp(23px, 3vw, 32px);
+}
+#answers {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+#answers button {
+  text-align: left;
+  min-height: 68px;
+  font-size: 19px;
+}
+#answers .correct {
+  background: #d9f5db;
+  border-color: #1d9a63;
+}
+#answers .wrong {
+  background: #ffe6d7;
+  border-color: #dc8867;
+}
+#question-image {
+  max-width: 100%;
+  max-height: 190px;
+  object-fit: contain;
+  margin: auto;
+}
+#feedback {
+  font-weight: 800;
+  min-height: 26px;
+}
+.results {
+  max-width: 650px;
+  margin: 30px auto;
+  text-align: center;
+}
+.score {
+  font-size: 90px;
+  font-weight: 1000;
+  color: var(--green);
+}
+.score small {
+  font-size: 26px;
+}
+#toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #153d50;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 14px;
+  display: none;
+  z-index: 10;
+}
+.celebrate {
+  animation: celebrate 1.5s ease-in-out infinite;
+}
+@keyframes bob {
+  50% {
+    transform: translateY(-8px) rotate(-2deg);
+  }
+}
+@keyframes celebrate {
+  50% {
+    transform: scale(1.04);
+    text-shadow: 0 0 20px #ffd659;
+  }
+}
+@media (max-width: 850px) {
+  .welcome {
+    gap: 25px;
+  }
+  .intro {
+    padding-bottom: 150px;
+  }
+  h1 {
+    font-size: 48px;
+  }
+  .vehicles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  header {
+    flex-wrap: wrap;
+  }
+  .screen {
+    padding: 20px 3vw;
+  }
+  .hero-car {
+    width: 250px;
+    left: 0;
+  }
+  .hud {
+    font-size: 12px;
+  }
+  .controls button {
+    width: 150px;
+  }
+}
+@media (max-width: 600px) {
+  .welcome {
+    grid-template-columns: 1fr;
+  }
+  .intro {
+    padding-bottom: 100px;
+  }
+  .intro h1 {
+    font-size: 45px;
+  }
+  .hero-car {
+    width: 180px;
+    height: 130px;
+    left: auto;
+    right: 0;
+    bottom: 0;
+  }
+  .panel {
+    padding: 22px;
+  }
+  .vehicles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .controls span {
+    font-size: 10px;
+  }
+  .controls button {
+    width: 110px;
+    font-size: 17px;
+  }
+  .hud {
+    flex-wrap: wrap;
+  }
+  .hud button {
+    min-height: 40px;
+  }
+  header button {
+    font-size: 11px;
+    padding: 6px;
+  }
+  .brand {
+    font-size: 20px;
+  }
+  .score {
+    font-size: 72px;
+  }
+}
+@media (orientation: portrait) {
+  .rotate {
+    display: block;
+  }
+  canvas {
+    height: 52vh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.confetti {
+  position: fixed;
+  top: -20px;
+  width: 10px;
+  height: 16px;
+  pointer-events: none;
+  z-index: 20;
+  animation: fall 3s linear forwards;
+}
+@keyframes fall {
+  to {
+    transform: translateY(105vh) rotate(720deg);
+  }
+}
+
+canvas {
+  object-fit: contain;
+}

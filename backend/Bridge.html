@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+  <body>
+    <script>
+      const origin=<?!= JSON.stringify(origin) ?>,channel=<?!= JSON.stringify(channel) ?>;
+      window.addEventListener('message',event=>{
+       if(event.source!==window.top||event.origin!==origin||event.data?.channel!==channel||event.data?.type!=='vq-request')return;
+       const {id,action,payload}=event.data;
+       if(!['start','answer','complete'].includes(action))return;
+       google.script.run.withSuccessHandler(result=>window.top.postMessage({type:'vq-response',channel,id,result},origin)).withFailureHandler(error=>window.top.postMessage({type:'vq-response',channel,id,error:error.message},origin)).publicRequest(action,payload);
+      });window.top.postMessage({type:'vq-ready',channel},origin);
+    </script>
+  </body>
+</html>
