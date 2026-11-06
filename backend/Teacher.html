@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <base target="_top" />
+    <title>Vehicle Quest · Teacher</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font: 16px system-ui;
+        color: #173e50;
+        background: #f3f7ef;
+        margin: 0;
+      }
+      header {
+        background: #173e50;
+        color: white;
+        padding: 22px;
+      }
+      main {
+        max-width: 1000px;
+        padding: 24px;
+        margin: auto;
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+        border: 1px solid #adbdba;
+        border-radius: 9px;
+        padding: 12px;
+        min-height: 46px;
+      }
+      button {
+        cursor: pointer;
+        background: white;
+        color: #173e50;
+        font-weight: 700;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      button:hover {
+        background: #fff1bd;
+      }
+      .primary {
+        background: #ffd34c;
+      }
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 18px 0;
+      }
+      .card {
+        padding: 20px;
+        background: white;
+        border-radius: 16px;
+        margin: 16px 0;
+        border: 1px solid #dbe5dc;
+      }
+      .card.inactive {
+        opacity: 0.7;
+      }
+      .fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      input,
+      textarea,
+      select {
+        display: block;
+        width: 100%;
+        margin: 6px 0 12px;
+        background: #fafcf7;
+      }
+      textarea {
+        min-height: 100px;
+      }
+      .full {
+        grid-column: 1/-1;
+      }
+      .small {
+        font-size: 13px;
+      }
+      #status {
+        padding: 12px;
+        background: #fff1bd;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      dialog {
+        border: 0;
+        border-radius: 20px;
+        width: min(660px, 94vw);
+        max-height: 90vh;
+        padding: 30px;
+        color: #173e50;
+      }
+      dialog::backdrop {
+        background: #173e50aa;
+      }
+      #preview-img {
+        max-width: 100%;
+        max-height: 190px;
+        object-fit: contain;
+      }
+      #preview-choices {
+        display: grid;
+        gap: 14px;
+      }
+      #preview-choices button {
+        text-align: left;
+        min-height: 68px;
+        font-size: 19px;
+      }
+      #preview-title {
+        font-size: 30px;
+      }
+      img.thumb {
+        max-width: 160px;
+        max-height: 100px;
+      }
+      .danger {
+        color: #b43b36;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+      }
+      h1 {
+        margin: 5px 0;
+      }
+      h2 {
+        font-size: 22px;
+      }
+      .pill {
+        padding: 5px 10px;
+        background: #e1f1e7;
+        border-radius: 20px;
+        font-size: 12px;
+      }
+      input[type="checkbox"] {
+        display: inline;
+        width: 20px;
+        min-height: 20px;
+      }
+      #history-list article {
+        border-bottom: 1px solid #ccc;
+        padding: 12px 0;
+      }
+      #history-list button {
+        margin: 5px;
+      }
+      #published-text {
+        white-space: pre-wrap;
+      }
+      @media (max-width: 600px) {
+        .fields {
+          grid-template-columns: 1fr;
+        }
+        main {
+          padding: 14px;
+        }
+        .toolbar button {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="small">VEHICLE QUEST · TEACHER STUDIO</div>
+      <h1>Build the next adventure.</h1>
+      <p id="identity"></p>
+    </header>
+    <main>
+      <div id="status" role="status">Loading your private dashboard…</div>
+      <p id="published" class="pill"></p>
+      <p>
+        Changes below are a <strong>draft</strong>. Save Draft keeps changes
+        private. Publish Questions makes the saved draft available to new games.
+        Games already in progress keep their original version.
+      </p>
+      <div class="toolbar">
+        <button id="add">＋ Add question</button
+        ><button id="save" class="primary">Save Draft</button
+        ><button id="publish" class="primary">Publish Questions</button
+        ><button id="history">View Version History</button
+        ><button id="reload">Reload saved draft</button>
+      </div>
+      <details class="card">
+        <summary>Racing & lesson settings</summary>
+        <p id="counts"></p>
+        <p class="small">
+          Question count and questions per level are calculated from active
+          questions. Assign levels below. At least one active question per
+          level; up to 60 questions total.
+        </p>
+        <div id="settings" class="fields"></div>
+      </details>
+      <div id="questions"></div>
+      <dialog id="preview">
+        <span
+          style="
+            font-size: 12px;
+            color: #087f6c;
+            letter-spacing: 2px;
+            font-weight: 900;
+          "
+          >QUESTION CHECKPOINT PREVIEW</span
+        >
+        <h2 id="preview-title"></h2>
+        <img id="preview-img" alt="Question picture" hidden />
+        <div id="preview-choices"></div>
+        <p id="preview-feedback"></p>
+        <button onclick="document.getElementById('preview').close()">
+          Close preview
+        </button>
+      </dialog>
+      <dialog id="history-dialog">
+        <h2>Published version history</h2>
+        <p>
+          Restoring publishes a new version. Existing games and previous
+          versions are preserved. Your saved draft is unchanged.
+        </p>
+        <div id="history-list"></div>
+        <button onclick="document.getElementById('history-dialog').close()">
+          Close
+        </button>
+      </dialog>
+      <dialog id="inspect-dialog">
+        <h2>Published questions</h2>
+        <div id="published-text"></div>
+        <button onclick="document.getElementById('inspect-dialog').close()">
+          Close
+        </button>
+      </dialog>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let draft,
+        published,
+        dirty = false,
+        busy = false;
+      const previews = new Map();
+      function call(action, payload = {}) {
+        return new Promise((resolve, reject) =>
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .teacherRequest(action, payload),
+        );
+      }
+      function status(text) {
+        $("status").textContent = text;
+      }
+      function changed() {
+        dirty = true;
+        status("Unsaved draft changes");
+        counts();
+      }
+      function counts() {
+        if (draft)
+          $("counts").textContent = [1, 2, 3]
+            .map(
+              (l) =>
+                "Level " +
+                l +
+                ": " +
+                draft.questions.filter((q) => q.level === l && q.active).length,
+            )
+            .join(" · ");
+      }
+      async function run(fn) {
+        if (busy) return;
+        busy = true;
+        document.querySelectorAll("button").forEach((b) => (b.disabled = true));
+        try {
+          await fn();
+        } catch (e) {
+          status("Error: " + e.message);
+        } finally {
+          busy = false;
+          document
+            .querySelectorAll("button")
+            .forEach((b) => (b.disabled = false));
+        }
+      }
+      async function load() {
+        const r = await call("load");
+        draft = r.draft;
+        published = r.published;
+        dirty = false;
+        $("identity").textContent = "Signed in as " + r.email;
+        $("published").textContent =
+          "CURRENTLY PUBLISHED · " +
+          published.id +
+          " · " +
+          published.questions.filter((q) => q.active).length +
+          " active questions";
+        render();
+        status("Saved draft loaded · Revision " + draft.revision);
+      }
+      function field(parent, label, value, onchange, type = "text") {
+        const l = document.createElement("label");
+        l.textContent = label;
+        const input = document.createElement(
+          type === "textarea" ? "textarea" : "input",
+        );
+        if (type !== "textarea") input.type = type;
+        input.value = value;
+        input.oninput = () => {
+          onchange(type === "number" ? Number(input.value) : input.value);
+          changed();
+        };
+        l.append(input);
+        parent.append(l);
+        return input;
+      }
+      function select(parent, label, options, value, onchange) {
+        const l = document.createElement("label");
+        l.textContent = label;
+        const s = document.createElement("select");
+        options.forEach(([v, text]) => {
+          const o = document.createElement("option");
+          o.value = v;
+          o.textContent = text;
+          s.append(o);
+        });
+        s.value = value;
+        s.onchange = () => {
+          onchange(s.value);
+          changed();
+        };
+        l.append(s);
+        parent.append(l);
+      }
+      function action(parent, text, fn) {
+        const b = document.createElement("button");
+        b.textContent = text;
+        b.onclick = fn;
+        parent.append(b);
+        return b;
+      }
+      function reorder() {
+        for (const level of [1, 2, 3])
+          draft.questions
+            .filter((q) => q.level === level)
+            .forEach((q, i) => (q.order = i + 1));
+      }
+      function render() {
+        counts();
+        const settings = $("settings");
+        settings.replaceChildren();
+        for (const [key, title, min, max, step] of [
+          ["speed", "Racing speed", 120, 400, 10],
+          ["obstacleFrequency", "Seconds between obstacles", 1.2, 6, 0.1],
+          ["hearts", "Starting hearts", 1, 5, 1],
+          ["feedbackDuration", "Minimum feedback time (ms)", 500, 5000, 100],
+          ["volume", "Sound volume", 0, 0.4, 0.01],
+        ]) {
+          const input = field(
+            settings,
+            title,
+            draft.settings[key],
+            (v) => (draft.settings[key] = v),
+            "number",
+          );
+          input.min = min;
+          input.max = max;
+          input.step = step;
+        }
+        const root = $("questions");
+        root.replaceChildren();
+        draft.questions.forEach((q, index) => {
+          const card = document.createElement("article");
+          card.className = "card" + (q.active ? "" : " inactive");
+          const heading = document.createElement("h2");
+          heading.textContent = "Question " + (index + 1) + " · " + q.id;
+          card.append(heading);
+          const fields = document.createElement("div");
+          fields.className = "fields";
+          field(fields, "Question ID", q.id, (v) => (q.id = v));
+          select(
+            fields,
+            "Level",
+            [
+              [1, "1 · Sunny Countryside"],
+              [2, "2 · Busy City"],
+              [3, "3 · Mountain Adventure"],
+            ],
+            q.level,
+            (v) => (q.level = Number(v)),
+          );
+          const text = field(
+            fields,
+            "Question text",
+            q.text,
+            (v) => (q.text = v),
+            "textarea",
+          );
+          text.parentElement.className = "full";
+          field(fields, "Choice A", q.a, (v) => (q.a = v));
+          field(fields, "Choice B", q.b, (v) => (q.b = v));
+          select(
+            fields,
+            "Correct answer",
+            [
+              ["A", "A"],
+              ["B", "B"],
+            ],
+            q.correct,
+            (v) => (q.correct = v),
+          );
+          field(
+            fields,
+            "Display order within level",
+            q.order,
+            (v) => (q.order = v),
+            "number",
+          );
+          const active = document.createElement("label");
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = q.active;
+          checkbox.onchange = () => {
+            q.active = checkbox.checked;
+            card.classList.toggle("inactive", !q.active);
+            changed();
+          };
+          active.append(checkbox, document.createTextNode(" Active question"));
+          fields.append(active);
+          card.append(fields);
+          const thumb = document.createElement("img");
+          thumb.className = "thumb";
+          thumb.alt = "Question picture";
+          thumb.hidden = !q.image;
+          card.append(thumb);
+          if (q.image) {
+            if (previews.has(q.image)) thumb.src = previews.get(q.image);
+            else
+              call("image", { id: q.image })
+                .then((src) => {
+                  previews.set(q.image, src);
+                  thumb.src = src;
+                })
+                .catch((e) => status("Image preview failed: " + e.message));
+          }
+          const buttons = document.createElement("div");
+          buttons.className = "toolbar";
+          const file = document.createElement("input");
+          file.type = "file";
+          file.accept = "image/jpeg,image/png,image/webp";
+          file.hidden = true;
+          file.onchange = () =>
+            run(async () => {
+              const f = file.files[0];
+              if (!f) return;
+              if (
+                f.size > 200000 ||
+                !["image/jpeg", "image/png", "image/webp"].includes(f.type)
+              )
+                throw Error("Choose a JPG, PNG, or WebP under 200 KB.");
+              status("Uploading picture…");
+              const data = await new Promise((res, rej) => {
+                const reader = new FileReader();
+                reader.onload = () => res(reader.result.split(",")[1]);
+                reader.onerror = () => rej(Error("Could not read the image."));
+                reader.readAsDataURL(f);
+              });
+              const r = await call("upload", { mime: f.type, data });
+              q.image = r.id;
+              previews.set(r.id, r.preview);
+              changed();
+              render();
+              status("Picture uploaded. Save Draft to keep this reference.");
+            });
+          card.append(file);
+          action(buttons, q.image ? "Replace picture" : "UPLOAD PICTURE", () =>
+            file.click(),
+          );
+          action(buttons, "Remove picture", () => {
+            q.image = "";
+            changed();
+            render();
+          });
+          action(buttons, "Preview", () => run(() => preview(q)));
+          action(buttons, "Duplicate", () => {
+            if (draft.questions.length >= 60) {
+              status("Maximum 60 questions.");
+              return;
+            }
+            draft.questions.splice(index + 1, 0, {
+              ...q,
+              id: "q_" + crypto.randomUUID(),
+            });
+            reorder();
+            changed();
+            render();
+          });
+          for (const [label, delta] of [
+            ["↑ Move up", -1],
+            ["↓ Move down", 1],
+          ])
+            action(buttons, label, () => {
+              const same = draft.questions
+                .map((v, i) => ({ v, i }))
+                .filter((x) => x.v.level === q.level);
+              const at = same.findIndex((x) => x.i === index),
+                other = same[at + delta];
+              if (!other) return;
+              [draft.questions[index], draft.questions[other.i]] = [
+                draft.questions[other.i],
+                draft.questions[index],
+              ];
+              reorder();
+              changed();
+              render();
+            });
+          action(buttons, "Delete", () => {
+            if (confirm("Delete this question from the draft?")) {
+              draft.questions.splice(index, 1);
+              changed();
+              render();
+            }
+          }).className = "danger";
+          card.append(buttons);
+          root.append(card);
+        });
+      }
+      async function preview(q) {
+        $("preview-title").textContent = q.text;
+        $("preview-img").hidden = !q.image;
+        if (q.image)
+          $("preview-img").src =
+            previews.get(q.image) || (await call("image", { id: q.image }));
+        $("preview-choices").replaceChildren();
+        $("preview-feedback").textContent = "";
+        for (const [letter, key] of [
+          ["A", "a"],
+          ["B", "b"],
+        ])
+          action($("preview-choices"), letter + ". " + q[key], () => {
+            $("preview-feedback").textContent =
+              letter === q.correct
+                ? "★ Brilliant! A speed boost for you!"
+                : "Good try! The correct answer is " +
+                  q.correct +
+                  ". " +
+                  q[q.correct === "A" ? "a" : "b"];
+          });
+        $("preview").showModal();
+      }
+      $("add").onclick = () => {
+        if (!draft) return;
+        if (draft.questions.length >= 60) {
+          status("Maximum 60 questions.");
+          return;
+        }
+        draft.questions.push({
+          id: "q_" + crypto.randomUUID(),
+          level: 1,
+          order:
+            Math.max(
+              0,
+              ...draft.questions
+                .filter((q) => q.level === 1)
+                .map((q) => q.order),
+            ) + 1,
+          text: "",
+          a: "",
+          b: "",
+          correct: "A",
+          image: "",
+          active: false,
+        });
+        changed();
+        render();
+      };
+      $("save").onclick = () =>
+        run(async () => {
+          status("Saving draft…");
+          const r = await call("save", draft);
+          draft.revision = r.revision;
+          dirty = false;
+          status("Draft Saved · Revision " + r.revision);
+        });
+      $("publish").onclick = () =>
+        run(async () => {
+          if (dirty) throw Error("Save Draft before publishing.");
+          if (
+            !confirm(
+              "Are you sure you want to publish these questions? Students starting a new game will receive this question set.",
+            )
+          )
+            return;
+          const r = await call("publish", { revision: draft.revision });
+          $("published").textContent = "CURRENTLY PUBLISHED · " + r.version;
+          status("Questions published successfully · " + r.version);
+        });
+      $("history").onclick = () =>
+        run(async () => {
+          const rows = await call("history");
+          $("history-list").replaceChildren();
+          for (const v of rows) {
+            const card = document.createElement("article");
+            const p = document.createElement("p");
+            p.textContent =
+              v.id +
+              " · " +
+              v.published +
+              " · " +
+              v.count +
+              " questions · " +
+              v.teacher;
+            card.append(p);
+            action(card, "Inspect", () =>
+              run(async () => {
+                const r = await call("inspect", { id: v.id });
+                $("published-text").textContent = r.questions
+                  .map(
+                    (q) =>
+                      "Level " +
+                      q.level +
+                      " · " +
+                      q.id +
+                      " · " +
+                      (q.active ? "Active" : "Inactive") +
+                      "\n" +
+                      q.text +
+                      "\nA. " +
+                      q.a +
+                      "\nB. " +
+                      q.b +
+                      "\nCorrect: " +
+                      q.correct,
+                  )
+                  .join("\n\n");
+                $("inspect-dialog").showModal();
+              }),
+            );
+            action(card, "RESTORE VERSION", () =>
+              run(async () => {
+                if (
+                  !confirm(
+                    "Publish this older question set as a new version? Your draft will remain unchanged.",
+                  )
+                )
+                  return;
+                const r = await call("restore", { id: v.id });
+                $("published").textContent =
+                  "CURRENTLY PUBLISHED · " + r.version;
+                status("Previous version restored as new version " + r.version);
+                $("history-dialog").close();
+              }),
+            );
+            $("history-list").append(card);
+          }
+          $("history-dialog").showModal();
+        });
+      $("reload").onclick = () =>
+        run(async () => {
+          if (
+            dirty &&
+            !confirm("Discard unsaved changes and reload the saved draft?")
+          )
+            return;
+          await load();
+        });
+      window.addEventListener("beforeunload", (e) => {
+        if (dirty) {
+          e.preventDefault();
+          e.returnValue = "";
+        }
+      });
+      run(load);
+    </script>
+  </body>
+</html>
