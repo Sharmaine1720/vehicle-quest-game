@@ -15,6 +15,7 @@ test("anonymous users cannot read drafts, publish, restore, or upload", () => {
     "restore",
     "upload",
     "history",
+    "image",
   ])
     assert.throws(() => f.c.teacherRequest(action, {}), /denied/);
 });
@@ -140,4 +141,133 @@ test("image uploads enforce type, size, signature, authorization and private ref
     () => c.teacherRequest("image", { id: "unknown" }),
     /not found/,
   );
+});
+
+function picturedLesson(
+  f,
+  data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lGQAAAAASUVORK5CYII=",
+) {
+  const image = f.c.teacherRequest("upload", { mime: "image/png", data });
+  const draft = f.c.teacherRequest("load").draft;
+  draft.questions.forEach((q) => (q.image = image.id));
+  const saved = f.c.teacherRequest("save", draft);
+  f.c.teacherRequest("publish", { revision: saved.revision });
+  Object.keys(f.metrics).forEach((key) => (f.metrics[key] = 0));
+  return image;
+}
+
+test("picture-heavy race starts without any Drive reads or image bytes", () => {
+  const f = fixture();
+  picturedLesson(f);
+  const s = f.c.publicRequest("start", { ...info, assetMode: "deferred" });
+  assert.equal(s.assetMode, "deferred");
+  assert.equal(s.questions.length, 15);
+  assert.ok(
+    s.questions.every((q) => q.image === "" && q.imageRef && !("correct" in q)),
+  );
+  assert.equal(f.metrics.driveReads, 0);
+  assert.equal(f.metrics.blobReads, 0);
+  const picture = f.c.publicRequest("image", {
+    token: s.token,
+    questionId: "q1",
+  });
+  assert.ok(picture.image.startsWith("data:image/png;base64,"));
+  assert.equal(f.metrics.blobReads, 1);
+  assert.equal(f.metrics.driveWhileLocked, 0);
+  assert.equal(f.metrics.lockDepth, 0);
+  f.c.publicRequest("image", { token: s.token, questionId: "q2" });
+  assert.equal(
+    f.metrics.blobReads,
+    1,
+    "Shared picture should be served from cache",
+  );
+});
+
+test("picture retrieval is pinned to the session version and rejects arbitrary IDs", () => {
+  const f = fixture(),
+    old = picturedLesson(f);
+  const session = f.c.publicRequest("start", {
+    ...info,
+    assetMode: "deferred",
+  });
+  const replacement = picturedLesson(f);
+  assert.notEqual(old.id, replacement.id);
+  f.files.delete(replacement.id);
+  assert.ok(
+    f.c.publicRequest("image", { token: session.token, questionId: "q1" })
+      .image,
+  );
+  assert.throws(
+    () =>
+      f.c.publicRequest("image", {
+        token: session.token,
+        questionId: "not-in-session",
+        id: old.id,
+      }),
+    /does not belong/,
+  );
+  assert.throws(
+    () => f.c.publicRequest("image", { token: "bad", questionId: "q1" }),
+    /Invalid/,
+  );
+  assert.equal(
+    JSON.parse(f.sheets.get("Sessions").rows[1][2]).answers.length,
+    0,
+  );
+});
+
+test("image cache uses bounded chunks, tolerates eviction and avoids repeated Drive reads", () => {
+  const f = fixture();
+  const bytes = Buffer.alloc(150000);
+  Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(bytes);
+  const image = picturedLesson(f, bytes.toString("base64"));
+  const s = f.c.publicRequest("start", { ...info, assetMode: "deferred" });
+  const first = f.c.publicRequest("image", {
+    token: s.token,
+    questionId: "q1",
+  });
+  const entries = [...f.cache.entries()].filter(([key]) =>
+    key.startsWith("picture:"),
+  );
+  assert.ok(entries.length > 2);
+  assert.ok(entries.every(([, value]) => value.length <= 64000));
+  assert.equal(
+    f.c.publicRequest("image", { token: s.token, questionId: "q2" }).image,
+    first.image,
+  );
+  assert.equal(f.metrics.blobReads, 1);
+  f.cache.delete("picture:" + image.id + ":0");
+  assert.equal(
+    f.c.publicRequest("image", { token: s.token, questionId: "q3" }).image,
+    first.image,
+  );
+  assert.equal(f.metrics.blobReads, 2);
+});
+
+test("legacy clients still receive inline pictures without holding the shared lock", () => {
+  const f = fixture();
+  picturedLesson(f);
+  const session = f.c.publicRequest("start", info);
+  assert.equal(session.assetMode, "inline");
+  assert.ok(
+    session.questions.every((q) =>
+      q.image.startsWith("data:image/png;base64,"),
+    ),
+  );
+  assert.equal(f.metrics.blobReads, 1);
+  assert.equal(f.metrics.driveWhileLocked, 0);
+});
+
+test("teacher previews warm the picture cache without holding the shared lock", () => {
+  const f = fixture(),
+    image = picturedLesson(f);
+  f.c.teacherRequest("image", { id: image.id });
+  assert.equal(f.metrics.driveWhileLocked, 0);
+  assert.equal(f.metrics.blobReads, 1);
+  const session = f.c.publicRequest("start", {
+    ...info,
+    assetMode: "deferred",
+  });
+  f.c.publicRequest("image", { token: session.token, questionId: "q1" });
+  assert.equal(f.metrics.blobReads, 1);
 });

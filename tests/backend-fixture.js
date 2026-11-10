@@ -63,6 +63,12 @@ export function fixture() {
       return s;
     },
   };
+  const metrics = {
+    driveReads: 0,
+    blobReads: 0,
+    lockDepth: 0,
+    driveWhileLocked: 0,
+  };
   const files = new Map();
   const folder = {
     getId: () => "images",
@@ -83,7 +89,10 @@ export function fixture() {
         isTrashed: () => false,
         getMimeType: () => blob.getContentType(),
         getSize: () => blob.getBytes().length,
-        getBlob: () => blob,
+        getBlob: () => {
+          metrics.blobReads++;
+          return blob;
+        },
       };
       files.set(id, file);
       return file;
@@ -99,10 +108,21 @@ export function fixture() {
     },
     Session: { getActiveUser: () => ({ getEmail: () => email }) },
     SpreadsheetApp: { openById: () => db },
-    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    LockService: {
+      getScriptLock: () => ({
+        waitLock() {
+          metrics.lockDepth++;
+        },
+        releaseLock() {
+          metrics.lockDepth--;
+        },
+      }),
+    },
     DriveApp: {
       getFolderById: () => folder,
       getFileById: (id) => {
+        metrics.driveReads++;
+        if (metrics.lockDepth) metrics.driveWhileLocked++;
         if (!files.has(id)) throw Error("Image not found");
         return files.get(id);
       },
@@ -120,6 +140,18 @@ export function fixture() {
       getScriptCache: () => ({
         get: (k) => cache.get(k),
         put: (k, v) => cache.set(k, v),
+        getAll: (keys) =>
+          Object.fromEntries(
+            keys
+              .filter((key) => cache.has(key))
+              .map((key) => [key, cache.get(key)]),
+          ),
+        putAll: (values) => {
+          Object.entries(values).forEach(([key, value]) => {
+            if (value.length > 100000) throw Error("Cache entry too large");
+            cache.set(key, value);
+          });
+        },
       }),
     },
   });
@@ -130,5 +162,5 @@ export function fixture() {
     c,
   );
   c.initialize();
-  return { c, sheets, setEmail: (e) => (email = e) };
+  return { c, sheets, metrics, files, cache, setEmail: (e) => (email = e) };
 }

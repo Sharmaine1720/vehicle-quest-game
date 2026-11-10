@@ -159,7 +159,7 @@ function validateQuestions_(qs, checkImages = true) {
       throw Error("Choose A or B as the correct answer.");
     if (q.image && !/^[a-zA-Z0-9_-]{10,100}$/.test(q.image))
       throw Error("Invalid image reference.");
-    if (q.image && checkImages) image_(q.image);
+    if (q.image && checkImages) imageFile_(q.image);
     if (!q.active) return;
     if (!q.text.trim() || !q.a.trim() || !q.b.trim())
       throw Error("Every active question needs text and two choices.");
@@ -189,9 +189,18 @@ function draft_() {
   };
 }
 function version_(id) {
-  const rows = sheet_("Versions").getDataRange().getValues().slice(1);
-  const row = id ? rows.find((r) => r[0] === id) : rows[rows.length - 1];
-  if (!row) throw Error("Question version unavailable.");
+  // Read one immutable version row, not the entire publication history.
+  const sheet = sheet_("Versions");
+  const match = id
+    ? sheet
+        .getRange("A:A")
+        .createTextFinder(id)
+        .matchEntireCell(true)
+        .findNext()
+    : null;
+  const index = id ? (match ? match.getRow() : 0) : sheet.getLastRow();
+  if (index < 2) throw Error("Question version unavailable.");
+  const row = sheet.getRange(index, 1, 1, 5).getValues()[0];
   return {
     id: row[0],
     published: String(row[1]),
@@ -216,6 +225,7 @@ function publishVersion_(questions, settings, email) {
 function teacherRequest(action, p) {
   const email = teacher_();
   p = p || {};
+  if (action === "image") return cachedImage_(p.id);
   return lock_(() => {
     if (action === "load")
       return { draft: draft_(), published: version_(), email };
@@ -261,11 +271,10 @@ function teacherRequest(action, p) {
       return { version: publishVersion_(v.questions, v.settings, email) };
     }
     if (action === "upload") return upload_(p);
-    if (action === "image") return image_(p.id);
     throw Error("Unknown teacher action.");
   });
 }
-function image_(id) {
+function imageFile_(id) {
   const folder = DriveApp.getFolderById(prop_("IMAGE_FOLDER_ID"));
   const file = DriveApp.getFileById(id);
   const parents = file.getParents();
@@ -279,6 +288,10 @@ function image_(id) {
     file.getSize() > 200000
   )
     throw Error("Question image unavailable in the configured folder.");
+  return file;
+}
+function image_(id) {
+  const file = imageFile_(id);
   const blob = file.getBlob();
   return (
     "data:" +
@@ -362,20 +375,32 @@ function session_(token) {
 function publicRequest(action, p) {
   p = p || {};
   if (JSON.stringify(p).length > 10000) throw Error("Request too large.");
-  return lock_(() => {
-    if (action === "start") {
+  if (action === "image") {
+    // Only pictures from this session's published version are accessible.
+    // Drive reads run outside the score/session lock so they cannot block classmates.
+    const session = session_(p.token);
+    const v = version_(session.data.version);
+    const q = validateQuestions_(v.questions, false).find(
+      (q) => q.id === p.questionId,
+    );
+    if (!q) throw Error("Question does not belong to this play session.");
+    return { image: q.image ? cachedImage_(q.image) : "" };
+  }
+  if (action === "start") {
+    const student = student_(p.student);
+    if (!["car", "bus", "taxi", "bicycle", "motorcycle"].includes(p.vehicle))
+      throw Error("Invalid vehicle.");
+    const v = version_(),
+      qs = validateQuestions_(v.questions, false);
+    const token = Utilities.getUuid() + "-" + Utilities.getUuid();
+    const deferred = p.assetMode === "deferred";
+    lock_(() => {
       const cache = CacheService.getScriptCache();
-      const key = "starts:" + Math.floor(Date.now() / 60000),
-        count = Number(cache.get(key) || 0);
+      const key = "starts:" + Math.floor(Date.now() / 60000);
+      const count = Number(cache.get(key) || 0);
       if (count >= 120)
         throw Error("Class server is busy. Please try again in a minute.");
       cache.put(key, String(count + 1), 120);
-      const student = student_(p.student);
-      if (!["car", "bus", "taxi", "bicycle", "motorcycle"].includes(p.vehicle))
-        throw Error("Invalid vehicle.");
-      const v = version_(),
-        qs = validateQuestions_(v.questions);
-      const token = Utilities.getUuid() + "-" + Utilities.getUuid();
       const data = {
         started: Date.now(),
         student,
@@ -385,20 +410,25 @@ function publicRequest(action, p) {
         receipt: null,
       };
       sheet_("Sessions").appendRow([token, new Date(), JSON.stringify(data)]);
-      return {
-        token,
-        version: v.id,
-        settings: v.settings,
-        questions: qs.map((q) => ({
-          id: q.id,
-          text: q.text,
-          a: q.a,
-          b: q.b,
-          level: q.level,
-          image: q.image ? image_(q.image) : "",
-        })),
-      };
-    }
+    });
+    // New clients start with lightweight question metadata; old clients retain inline pictures.
+    return {
+      token,
+      version: v.id,
+      settings: v.settings,
+      assetMode: deferred ? "deferred" : "inline",
+      questions: qs.map((q) => ({
+        id: q.id,
+        text: q.text,
+        a: q.a,
+        b: q.b,
+        level: q.level,
+        image: !deferred && q.image ? cachedImage_(q.image) : "",
+        imageRef: deferred ? q.image || "" : "",
+      })),
+    };
+  }
+  return lock_(() => {
     const session = session_(p.token),
       data = session.data,
       v = version_(data.version),
@@ -500,7 +530,38 @@ function validateDraft_(questions) {
     if (q.image) {
       if (!/^[a-zA-Z0-9_-]{10,100}$/.test(q.image))
         throw Error("Invalid image reference.");
-      image_(q.image);
+      imageFile_(q.image);
     }
   });
+}
+
+// Cache raster data in bounded chunks (Apps Script limits each cache value to 100 KB).
+// Cache eviction or failure only affects performance; Drive remains the source of truth.
+function cachedImage_(id) {
+  const cache = CacheService.getScriptCache();
+  const prefix = "picture:" + id + ":";
+  try {
+    const count = Number(cache.get(prefix + "count"));
+    if (count >= 1 && count <= 5) {
+      const keys = Array.from({ length: count }, (_, i) => prefix + i);
+      const chunks = cache.getAll(keys);
+      if (keys.every((key) => typeof chunks[key] === "string"))
+        return keys.map((key) => chunks[key]).join("");
+    }
+  } catch (error) {
+    /* A cache miss must not prevent loading. */
+  }
+  const image = image_(id);
+  try {
+    const values = {},
+      size = 64000,
+      count = Math.ceil(image.length / size);
+    for (let i = 0; i < count; i++)
+      values[prefix + i] = image.slice(i * size, (i + 1) * size);
+    cache.putAll(values, 900);
+    cache.put(prefix + "count", String(count), 900);
+  } catch (error) {
+    /* Returning the verified Drive image is still safe. */
+  }
+  return image;
 }
