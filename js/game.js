@@ -6,6 +6,7 @@ import {
   collision,
 } from "./core.js";
 import { Backend } from "./api.js";
+import { QuestionPictures } from "./pictures.js";
 import { loadArt } from "./art.js";
 import { scenery } from "./scenery.js";
 const $ = (id) => document.getElementById(id),
@@ -44,7 +45,8 @@ let student,
   steering = 0,
   answerBusy = false,
   answerAt = 0,
-  pendingChoice = null;
+  pendingChoice = null,
+  pictures = null;
 let effects = true,
   musicEnabled = false,
   audio,
@@ -183,9 +185,15 @@ $("race-start").onclick = async () => {
   $("race-loading-status").hidden = !api;
   try {
     if (api) {
-      const result = await api.request("start", { student, vehicle });
+      const result = await api.request("start", {
+        student,
+        vehicle,
+        assetMode: "deferred",
+      });
       ({ questions, version, token } = result);
       settings = { ...settings, ...result.settings };
+      pictures = new QuestionPictures(api, token);
+      pictures.prefetch(questions.slice(0, 2));
     } else {
       bank = validateBank(
         await fetch("data/questions.json").then((r) => {
@@ -444,14 +452,17 @@ function openQuestion() {
   $("question-label").textContent =
     `CHECKPOINT ${current + 1} OF ${questions.length} · LEVEL ${q.level}`;
   $("question-text").textContent = q.text;
-  $("question-image").hidden = !q.image;
-  if (q.image) {
+  $("question-image").onerror = null;
+  $("question-image").hidden = !q.image || Boolean(q.imageRef);
+  if (q.image && !q.imageRef) {
     $("question-image").src = q.image;
     $("question-image").onerror = () => {
       $("question-image").hidden = true;
       toast("Picture unavailable. You can still answer the question.");
     };
   }
+  $("picture-status").textContent = "";
+  $("retry-picture").hidden = true;
   $("feedback").textContent = "";
   $("continue").hidden = true;
   $("retry-answer").hidden = true;
@@ -464,11 +475,35 @@ function openQuestion() {
   ]) {
     const b = document.createElement("button");
     b.textContent = `${letter}. ${q[key]}`;
+    b.disabled = Boolean(q.imageRef);
     b.onclick = () => answer(letter);
     $("answers").append(b);
   }
   $("checkpoint").showModal();
+  if (q.imageRef) preparePicture(q);
 }
+async function preparePicture(question) {
+  $("retry-picture").hidden = true;
+  $("picture-status").textContent = "Loading this question’s picture…";
+  try {
+    const source = await pictures.load(question);
+    if (questions[current] !== question || state !== "question") return;
+    $("question-image").src = source;
+    await $("question-image").decode();
+    if (questions[current] !== question || state !== "question") return;
+    $("question-image").hidden = false;
+    $("picture-status").textContent = "";
+    [...$("answers").children].forEach((button) => (button.disabled = false));
+  } catch (error) {
+    if (questions[current] !== question || state !== "question") return;
+    question.image = "";
+    pictures.tasks.delete(question.imageRef);
+    $("question-image").hidden = true;
+    $("picture-status").textContent = "Picture not loaded. " + error.message;
+    $("retry-picture").hidden = false;
+  }
+}
+$("retry-picture").onclick = () => preparePicture(questions[current]);
 $("checkpoint").addEventListener("cancel", (e) => e.preventDefault());
 async function answer(choice) {
   if (answerBusy || receipts[current]) return;
@@ -516,6 +551,7 @@ $("continue").onclick = () => {
     return;
   const correct = receipts[current].correct;
   current++;
+  pictures?.prefetch(questions.slice(current, current + 2));
   $("checkpoint").close();
   checkpointDistance = 0;
   boost = correct ? 3 : 0;

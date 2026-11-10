@@ -36,6 +36,13 @@ async function advanceToQuestion() {
   throw Error("Checkpoint did not appear");
 }
 try {
+  // Practice tests stay independent of the school's configured Google deployment.
+  await page.route("**/config.js", (route) =>
+    route.fulfill({
+      contentType: "application/javascript",
+      body: "window.VEHICLE_QUEST_CONFIG={studentApiUrl:'',teacherUrl:'',musicTracks:[]};",
+    }),
+  );
   await page.clock.install();
   await page.goto(base);
   await page.screenshot({ path: "/tmp/vehicle-quest-welcome.png" });

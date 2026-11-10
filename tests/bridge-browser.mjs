@@ -60,6 +60,12 @@ try {
     }
   });
   assert.equal(error, "Simulated backend rejection");
+  const picture = await page.evaluate(() =>
+    window.testBackend.request("image", { token: "session", questionId: "q1" }),
+  );
+  assert.equal(picture.action, "image");
+  assert.equal(picture.payload.questionId, "q1");
+
   await page.evaluate(() => {
     window.slowResult = null;
     window.testBackend.request("start", { delayMs: 65000 }).then(
