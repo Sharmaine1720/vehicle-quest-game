@@ -60,11 +60,20 @@ export class Backend {
   async request(action, payload = {}) {
     await this.connect();
     const id = crypto.randomUUID();
+    // Published picture sets can take over a minute to read from Drive.
+    // Keep the bridge handshake separate from the slower Google RPC deadline.
+    const timeoutMs = action === "start" ? 120000 : 90000;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
-        reject(Error("Connection interrupted. Please retry."));
-      }, 30000);
+        reject(
+          Error(
+            action === "start"
+              ? "Google did not finish loading the questions within 2 minutes. Please retry."
+              : "Google did not respond within 90 seconds. Please retry.",
+          ),
+        );
+      }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
       this.bridge.postMessage(
         { type: "vq-request", channel: this.channel, id, action, payload },

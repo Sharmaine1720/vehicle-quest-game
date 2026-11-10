@@ -104,3 +104,7 @@ Node tests have no dependencies. They run actual core logic and Apps Script func
 - `backend/`: Apps Script server, authenticated teacher dashboard, bridge, seed and manifest.
 - `tests/`: unit/backend and browser checks.
 - `.github/workflows/pages.yml`: manual tested Pages deployment.
+
+### Slow Google responses
+
+Picture-heavy lessons can take more than 30 seconds to load from Google. The student game allows up to 2 minutes for race startup and 90 seconds for answer checking or score confirmation, while keeping the separate initial bridge connection deadline at 25 seconds. It shows a loading notice during startup. These limits accommodate slow responses; they do not make Google requests faster. If startup still times out, inspect the publicRequest entries in Apps Script Executions and check Google quotas, deployment access, and image availability. Retry only after the current attempt finishes. No Apps Script code change or redeployment is needed to receive this frontend timeout correction; publish the updated GitHub Pages files.

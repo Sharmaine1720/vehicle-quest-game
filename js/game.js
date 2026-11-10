@@ -180,6 +180,7 @@ $("race-start").onclick = async () => {
   const button = $("race-start");
   button.disabled = true;
   button.textContent = "Preparing your adventure…";
+  $("race-loading-status").hidden = !api;
   try {
     if (api) {
       const result = await api.request("start", { student, vehicle });
@@ -217,6 +218,7 @@ $("race-start").onclick = async () => {
   } finally {
     button.disabled = false;
     button.textContent = "READY TO RACE! →";
+    $("race-loading-status").hidden = true;
   }
 };
 async function countdown() {
